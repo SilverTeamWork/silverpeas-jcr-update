@@ -48,11 +48,30 @@
     </pluginRepository>
   </pluginRepositories>
 
+  <distributionManagement>
+    <repository>
+      <id>silverpeas</id>
+      <name>Repository Silverpeas</name>
+      <layout>default</layout>
+      <url>https://www.silverpeas.org/nexus/content/repositories/releases/</url>
+    </repository>
+    <snapshotRepository>
+      <id>silverpeas-snapshots</id>
+      <name>Snapshots Repository Silverpeas</name>
+      <layout>default</layout>
+      <url>https://www.silverpeas.org/nexus/content/repositories/snapshots/</url>
+    </snapshotRepository>
+    <site>
+      <id>silverpeas_repository</id>
+      <url>scp://www.silverpeas.org/var/www/docs</url>
+    </site>
+  </distributionManagement>
+
   <properties>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <oak.version>1.48.0</oak.version>
+    <oak.version>1.52.0</oak.version>
   </properties>
 
   <dependencies>
