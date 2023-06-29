@@ -6,7 +6,7 @@
 
   <groupId>org.silverpeas.jcr</groupId>
   <artifactId>silverpeas-jcr-update</artifactId>
-  <version>1.0</version>
+  <version>2.0</version>
 
   <name>Silverpeas JCR Update</name>
   <description>

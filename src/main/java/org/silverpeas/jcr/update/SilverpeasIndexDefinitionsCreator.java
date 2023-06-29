@@ -4,31 +4,52 @@ import org.apache.jackrabbit.oak.plugins.index.IndexUtils;
 import org.apache.jackrabbit.oak.spi.lifecycle.RepositoryInitializer;
 import org.apache.jackrabbit.oak.spi.state.NodeBuilder;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.LoggerFactory;
 
+import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
+import java.util.stream.Stream;
 
 public class SilverpeasIndexDefinitionsCreator implements RepositoryInitializer {
-    @Override
-    public void initialize(@NotNull NodeBuilder root) {
+
+  private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SilverpeasIndexDefinitionsCreator.class);
+
+  private static final Path INDEX_CONF_PATH = Path.of(System.getenv("SILVERPEAS_HOME"), "configuration", "silverpeas",
+      "resources", "silverpeas-oak-index.properties");
+
+  @Override
+  public void initialize(@NotNull NodeBuilder root) {
+    if (Files.exists(INDEX_CONF_PATH)) {
+      LOG.info("Load index configuration file {}", INDEX_CONF_PATH);
+      try (Reader reader = Files.newBufferedReader(INDEX_CONF_PATH)) {
+        Properties indexConf = new Properties();
+        indexConf.load(reader);
+
         NodeBuilder index = IndexUtils.getOrCreateOakIndex(root);
-
-        createIndexDefinitionOnProperty(index, "name", SilverpeasNodeProperties.SLV_PROPERTY_NAME);
-        createIndexDefinitionOnProperty(index, "description", SilverpeasNodeProperties.SLV_PROPERTY_DESCRIPTION);
-        createIndexDefinitionOnProperty(index, "NameOrDescription", SilverpeasNodeProperties.SLV_PROPERTY_NAME,
-                SilverpeasNodeProperties.SLV_PROPERTY_DESCRIPTION);
-        createIndexDefinitionOnProperty(index, "oldSilverpeasId", SilverpeasNodeProperties.SLV_PROPERTY_OLD_ID);
-        createIndexDefinitionOnProperty(index, "foreignKey", SilverpeasNodeProperties.SLV_PROPERTY_FOREIGN_KEY);
-        createIndexDefinitionOnProperty(index, "owner", SilverpeasNodeProperties.SLV_PROPERTY_OWNER);
-        createIndexDefinitionOnProperty(index, "expiryDate", SilverpeasNodeProperties.SLV_PROPERTY_EXPIRY_DATE);
-        createIndexDefinitionOnProperty(index, "alertDate", SilverpeasNodeProperties.SLV_PROPERTY_ALERT_DATE);
-        createIndexDefinitionOnProperty(index, "order", SilverpeasNodeProperties.SLV_PROPERTY_ORDER);
-        createIndexDefinitionOnProperty(index, "versioned", SilverpeasNodeProperties.SLV_PROPERTY_VERSIONED);
+        indexConf.forEach((k, v) -> {
+          String indexName = k.toString();
+          String[] nodeProps = Stream.of(v.toString().split(" ")).map(String::trim).toArray(String[]::new);
+          createIndexDefinitionOnProperty(index, indexName, nodeProps);
+        });
+      } catch (Exception e) {
+        LOG.error(e.getMessage(), e);
+      }
+    } else {
+      LOG.warn("No index configuration file found at {}", INDEX_CONF_PATH);
     }
+  }
 
-    private void createIndexDefinitionOnProperty(NodeBuilder indexRoot, String indexName, String... propertyName) {
-        IndexUtils.createIndexDefinition(indexRoot, indexName, true, false,
-                Arrays.asList(propertyName),
-                List.of(SilverpeasNodeProperties.SLV_SIMPLE_DOCUMENT));
+  private void createIndexDefinitionOnProperty(NodeBuilder indexRoot, String indexName, String... propertyNames) {
+    if (LOG.isInfoEnabled()) {
+      String propLabel = propertyNames.length > 1 ? "properties" : "property";
+      LOG.info("Create index {} on {} {}", indexName, propLabel, String.join(" and ", propertyNames));
     }
+    IndexUtils.createIndexDefinition(indexRoot, indexName, true, false,
+        Arrays.asList(propertyNames),
+        List.of(SilverpeasNodeProperties.SLV_SIMPLE_DOCUMENT));
+  }
 }
